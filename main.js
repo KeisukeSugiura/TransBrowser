@@ -7,13 +7,33 @@ const BrowserWindow = electron.BrowserWindow
 const path = require('path')
 const url = require('url')
 
+// 1===================================
+const {Tray,ipcMain} = require('electron')
+let tray
+// ===================================
+
+ipcMain.on("notification",(event,arg)=>{
+  console.log("notification")
+  console.log(arg)
+})
+
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow
+// ===================================
+let transFlg = false // false : マウスイベントを受け付ける true : マウスイベント透過させる
+// ===================================
 
 function createWindow () {
   // Create the browser window.
-  mainWindow = new BrowserWindow({width: 800, height: 600})
+  mainWindow = new BrowserWindow({width: 800, height: 600,
+    // 2===================================
+     frame:false,//ウィンドウの枠の設定
+     transparent:true,//ウィンドウの背景色の透過を許可する
+     titleBarStyle:"hidden",//タイトルバーを隠す
+     show:true//準備ができたら表示する
+     // ===================================
+   })
 
   // and load the index.html of the app.
   mainWindow.loadURL(url.format({
@@ -23,7 +43,7 @@ function createWindow () {
   }))
 
   // Open the DevTools.
-  mainWindow.webContents.openDevTools()
+  //mainWindow.webContents.openDevTools()
 
   // Emitted when the window is closed.
   mainWindow.on('closed', function () {
@@ -32,6 +52,18 @@ function createWindow () {
     // when you should delete the corresponding element.
     mainWindow = null
   })
+
+  // 3===================================
+  tray = new Tray(__dirname+"/favi.png");
+
+  tray.on('click',() => { //トレイアイコンのクリックした時のイベントリスナー
+    transFlg = !transFlg //状態の変化
+    mainWindow.setIgnoreMouseEvents(transFlg) //マウスイベント透過設定メソッド
+    mainWindow.setAlwaysOnTop(transFlg) // 常に最前面
+    mainWindow.webContents.send('changeTransparentMode',{flg:transFlg}) // ウィンドウに通知
+  })
+  // ===================================
+
 }
 
 // This method will be called when Electron has finished
